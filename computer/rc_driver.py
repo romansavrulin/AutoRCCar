@@ -29,23 +29,25 @@ class NeuralNetwork(object):
 class RCControl(object):
 
     def __init__(self):
-        self.serial_port = serial.Serial('/dev/tty.usbmodem1421', 115200, timeout=1)
+        print "init"
+        #self.serial_port = serial.Serial('/dev/ttyS0', 115200, timeout=1)
 
     def steer(self, prediction):
         if prediction == 2:
-            self.serial_port.write(chr(1))
+            #self.serial_port.write(chr(1))
             print("Forward")
         elif prediction == 0:
-            self.serial_port.write(chr(7))
+            #self.serial_port.write(chr(7))
             print("Left")
         elif prediction == 1:
-            self.serial_port.write(chr(6))
+            #self.serial_port.write(chr(6))
             print("Right")
         else:
             self.stop()
 
     def stop(self):
-        self.serial_port.write(chr(0))
+        #self.serial_port.write(chr(0))
+        print("stop")
 
 
 class DistanceToCamera(object):
@@ -176,12 +178,15 @@ class VideoStreamHandler(SocketServer.StreamRequestHandler):
         stop_flag = False
         stop_sign_active = True
 
+        print "handle"
+
         # stream video frames one by one
         try:
             while True:
                 stream_bytes += self.rfile.read(1024)
                 first = stream_bytes.find('\xff\xd8')
                 last = stream_bytes.find('\xff\xd9')
+                print "r: %d; f: %d; l: %d" % (len(stream_bytes), first, last)
                 if first != -1 and last != -1:
                     jpg = stream_bytes[first:last+2]
                     stream_bytes = stream_bytes[last+2:]
@@ -208,7 +213,7 @@ class VideoStreamHandler(SocketServer.StreamRequestHandler):
                     # reshape image
                     image_array = half_gray.reshape(1, 38400).astype(np.float32)
                     
-                    # neural network makes prediction
+                    # neural network Videomakes prediction
                     prediction = self.model.predict(image_array)
 
                     # stop conditions
@@ -282,9 +287,9 @@ class ThreadServer(object):
         server = SocketServer.TCPServer((host, port), SensorDataHandler)
         server.serve_forever()
 
-    distance_thread = threading.Thread(target=server_thread2, args=('192.168.1.100', 8002))
+    distance_thread = threading.Thread(target=server_thread2, args=('0.0.0.0', 8002))
     distance_thread.start()
-    video_thread = threading.Thread(target=server_thread('192.168.1.100', 8000))
+    video_thread = threading.Thread(target=server_thread('0.0.0.0', 8000))
     video_thread.start()
 
 if __name__ == '__main__':
